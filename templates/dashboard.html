@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2>Dashboard</h2>
+
+  <h4 class="mt-4">Sales</h4>
+  {% if sales %}
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Amount</th>
+          <th>Date</th>
+          <th>Receipt</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sale in sales %}
+        <tr>
+          <td>{{ sale.product }}</td>
+          <td>{{ sale.amount }}</td>
+          <td>{{ sale.date }}</td>
+          <td>
+            {% if sale.receipt_url %}
+              <img src="{{ sale.receipt_url }}" alt="Receipt" width="100">
+            {% else %}
+              No receipt
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No sales data found.</p>
+  {% endif %}
+
+  <h4 class="mt-5">Expenses</h4>
+  {% if expenses %}
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Amount</th>
+          <th>Date</th>
+          <th>Receipt</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for expense in expenses %}
+        <tr>
+          <td>{{ expense.description }}</td>
+          <td>{{ expense.amount }}</td>
+          <td>{{ expense.date }}</td>
+          <td>
+            {% if expense.receipt_url %}
+              <img src="{{ expense.receipt_url }}" alt="Receipt" width="100">
+            {% else %}
+              No receipt
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No expense data found.</p>
+  {% endif %}
+</div>
+{% endblock %}

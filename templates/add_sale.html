@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Sale{% endblock %}
+
+{% block content %}
+  <div class="mt-4">
+    <h2>Add Sale</h2>
+    <form method="POST" enctype="multipart/form-data">
+ <div class="mb-3">
+  <label for="product" class="form-label">Product</label>
+  <div class="input-group">
+    <input type="text" id="product" class="form-control" name="product" required>
+    <button type="button" onclick="startDictation('product')" class="btn btn-outline-secondary">🎤</button>
+  </div>
+</div>
+
+  <div class="mb-3">
+    <label for="amount" class="form-label">Amount</label>
+    <input type="number" step="0.01" class="form-control" name="amount" required>
+  </div>
+  <div class="mb-3">
+    <label for="receipt" class="form-label">Upload Receipt (Optional)</label>
+    <input type="file" class="form-control" name="receipt" accept="image/*">
+  </div>
+  <button type="submit" class="btn btn-success">Add Sale</button>
+</form>
+
+  </div>
+{% endblock %}
+
