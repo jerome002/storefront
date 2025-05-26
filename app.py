@@ -1,112 +1,105 @@
-from flask import Flask, render_template, request, redirect, url_for
-from supabase import create_client, Client
-from dotenv import load_dotenv
-from datetime import datetime
 import os
-import requests
+from flask import Flask, render_template, request, redirect, url_for, flash
+from supabase import create_client, Client
 from werkzeug.utils import secure_filename
+from datetime import datetime
+from dotenv import load_dotenv  # <-- Add this import
 
-# Load environment variables from .env file
-load_dotenv()
+load_dotenv()  # <-- This loads variables from .env into os.environ
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback-secret-key")
 
-# Supabase credentials
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-
-HEADERS = {
-    "apikey": SUPABASE_KEY,
-    "Authorization": f"Bearer {SUPABASE_KEY}",
-    "Content-Type": "application/json"
-}
-
-# Initialize Supabase client
+SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+app.config['UPLOAD_FOLDER'] = "uploads"
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+SUPABASE_TABLE = "transactions"  # Replace with your actual table name
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Configure upload folder and allowed extensions
-UPLOAD_FOLDER = 'static/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+@app.route("/", methods=["GET"])
+def index():
+    transactions = supabase.table(SUPABASE_TABLE).select("*").execute().data
+    return render_template("index.html", transactions=transactions)
+@app.route("/dashboard")
+def dashboard():
+    # Fetch all transactions from Supabase
+    res = supabase.table("transactions").select("*").execute()
+    if not res.data:
+        products = []
+    else:
+        transactions = res.data
+        # Group by product
+        product_dict = {}
+        for tr in transactions:
+            product = tr.get("product", "Unknown")
+            if product not in product_dict:
+                product_dict[product] = {"transactions": [], "total_sale": 0, "total_expense": 0}
+            product_dict[product]["transactions"].append(tr)
+            if tr["type"] == "sale":
+                product_dict[product]["total_sale"] += tr.get("amount", 0) or 0
+            elif tr["type"] == "expense":
+                product_dict[product]["total_expense"] += tr.get("amount", 0) or 0
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        # Prepare product list with profit/loss calculation
+        products = []
+        for product, info in product_dict.items():
+            profit = info["total_sale"] - info["total_expense"]
+            products.append({
+                "name": product,
+                "transactions": info["transactions"],
+                "total_sale": info["total_sale"],
+                "total_expense": info["total_expense"],
+                "profit": profit,
+                "status": "Profit" if profit > 0 else ("Break-even" if profit == 0 else "Loss"),
+            })
 
-# Home page - show products
+    return render_template("dashboard.html", products=products)
 
-@app.route('/add-sale', methods=['GET', 'POST'])
-def add_sale():
+@app.route('/add-transaction', methods=['GET', 'POST'])
+def add_transaction():
     if request.method == 'POST':
-        product = request.form['product']
-        amount = float(request.form['amount'])
-
-        # Handle image upload
+        trans_type = request.form.get('type')
+        description = request.form.get('description', '')
+        amount = request.form.get('amount', '')
+        date = request.form.get('date', '')
+        voice_text = request.form.get('voice_text', '')
         receipt_url = None
+
+        # Save uploaded image if provided
         if 'receipt' in request.files:
             file = request.files['receipt']
-            if file and allowed_file(file.filename):
+            if file and file.filename != '':
                 filename = secure_filename(file.filename)
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
-                receipt_url = f"/static/uploads/{filename}"
+                receipt_url = filepath
 
-        supabase.table("sales").insert({
-            "product": product,
-            "amount": amount,
+        # Prepare data for Supabase
+        data = {
+            "type": trans_type,
+            "product": description, 
+            "description": description,
+            "amount": float(amount) if amount else None,
+            "date": date,
+            "voice_text": voice_text if voice_text else None,
             "receipt_url": receipt_url
-        }).execute()
-
-        return redirect(url_for('dashboard'))
-
-    return render_template("add_sale.html")
-
-
-@app.route('/add-expense', methods=['GET', 'POST'])
-def add_expense():
-    if request.method == 'POST':
-        description = request.form['description']
-        amount = float(request.form['amount'])
-        receipt_file = request.files.get('receipt')
-
-        receipt_url = None
-        if receipt_file and receipt_file.filename:
-            filename = secure_filename(receipt_file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            receipt_file.save(file_path)
-            receipt_url = url_for('static', filename='uploads/' + filename, _external=True)
-
-        # Insert into Supabase
-        expense_data = {
-            'description': description,
-            'amount': amount,
-            'receipt_url': receipt_url
         }
-        supabase.table('expenses').insert(expense_data).execute()
-        return redirect(url_for('dashboard'))
+        res = supabase.table(SUPABASE_TABLE).insert(data).execute()
+        if res.data:
+            flash("Transaction saved!", "success")
+        else:
+            flash(f"Error saving: {res.error}", "danger")
+        return redirect(url_for('add_transaction'))
 
-    return render_template('add_expense.html')
-
-
-@app.route('/', methods=['GET', 'POST'])
-def dashboard():
-    # Optional: Use request.args or request.form to get filter inputs
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-
-    sales_query = supabase.table('sales')
-    expenses_query = supabase.table('expenses')
-
-    if start_date and end_date:
-        sales_query = sales_query.gte('date', start_date).lte('date', end_date)
-        expenses_query = expenses_query.gte('date', start_date).lte('date', end_date)
-
-    sales_data = sales_query.select('*').execute().data
-    expense_data = expenses_query.select('*').execute().data
-
-    return render_template('dashboard.html', sales=sales_data, expenses=expense_data)
-
-
-
+    return render_template('add_transaction.html')
+@app.route('/delete-transaction/<id>', methods=['POST'])
+def delete_transaction(id):
+    res = supabase.table("transactions").delete().eq("id", id).execute()
+    if res.data is not None:  # Success if .data is a list/dict
+        flash("Transaction deleted!", "success")
+    else:
+        flash("Failed to delete transaction.", "danger")
+    return redirect(request.referrer or url_for('dashboard'))
 if __name__ == '__main__':
     app.run(debug=True)
-

@@ -1,0 +1,16 @@
+body {
+  background: #f7f7f9;
+}
+form {
+  background: #fff;
+  padding: 2rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #0001;
+}
+@media (max-width: 600px) {
+  .container {
+    padding: 0 4px;
+  }
+}
+.text-success { color: #28a745 !important; }
+.text-danger { color: #dc3545 !important; }

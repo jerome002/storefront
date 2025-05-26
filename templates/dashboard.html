@@ -2,71 +2,65 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-  <h2>Dashboard</h2>
-
-  <h4 class="mt-4">Sales</h4>
-  {% if sales %}
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>Product</th>
-          <th>Amount</th>
-          <th>Date</th>
-          <th>Receipt</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for sale in sales %}
-        <tr>
-          <td>{{ sale.product }}</td>
-          <td>{{ sale.amount }}</td>
-          <td>{{ sale.date }}</td>
-          <td>
-            {% if sale.receipt_url %}
-              <img src="{{ sale.receipt_url }}" alt="Receipt" width="100">
-            {% else %}
-              No receipt
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="container mt-4">
+  <h2 class="mb-4">Product Dashboard</h2>
+  {% if products %}
+    <div class="row">
+      {% for product in products %}
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">{{ product.name }}</h5>
+          </div>
+          <div class="card-body">
+            <ul class="list-group mb-3">
+              <li class="list-group-item"><strong>Total Sales:</strong> {{ product.total_sale }}</li>
+              <li class="list-group-item"><strong>Total Expenses:</strong> {{ product.total_expense }}</li>
+              <li class="list-group-item">
+                <strong>Status:</strong>
+                {% if product.profit > 0 %}
+                  <span class="text-success fw-bold">Profit (+{{ product.profit }})</span>
+                {% elif product.profit < 0 %}
+                  <span class="text-danger fw-bold">Loss ({{ product.profit }})</span>
+                {% else %}
+                  <span class="text-secondary fw-bold">Break-even</span>
+                {% endif %}
+              </li>
+            </ul>
+            <h6>Transactions</h6>
+            <table class="table table-sm table-bordered">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Description</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for tr in product.transactions %}
+      <tr>
+        <td>{{ tr.date }}</td>
+        <td>{{ tr.type|capitalize }}</td>
+        <td>{{ tr.amount }}</td>
+        <td>{{ tr.description }}</td>
+        <td>
+          <form action="{{ url_for('delete_transaction', id=tr['id']) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this transaction?');">
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
   {% else %}
-    <p>No sales data found.</p>
-  {% endif %}
-
-  <h4 class="mt-5">Expenses</h4>
-  {% if expenses %}
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th>Amount</th>
-          <th>Date</th>
-          <th>Receipt</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for expense in expenses %}
-        <tr>
-          <td>{{ expense.description }}</td>
-          <td>{{ expense.amount }}</td>
-          <td>{{ expense.date }}</td>
-          <td>
-            {% if expense.receipt_url %}
-              <img src="{{ expense.receipt_url }}" alt="Receipt" width="100">
-            {% else %}
-              No receipt
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>No expense data found.</p>
+    <div class="alert alert-info">No transactions yet.</div>
   {% endif %}
 </div>
 {% endblock %}

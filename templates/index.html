@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Home - Biz Tracker{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="jumbotron text-center bg-white p-5 rounded shadow">
+    <h1 class="display-4 mb-4">Welcome to StoreFront Tracker!</h1>
+    <p class="lead mb-4">
+      Easily track your sales, expenses, and profits for each product.
+    </p>
+    <hr class="my-4">
+    <div class="d-flex justify-content-center gap-3 mt-4">
+      <a href="{{ url_for('add_transaction') }}" class="btn btn-lg btn-primary">
+        Add Transaction
+      </a>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-lg btn-success">
+        View Dashboard
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
