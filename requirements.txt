@@ -1,15 +1,20 @@
-flask==3.1.0
+# Requirements for the project
+Flask==3.1.0
 gunicorn==23.0.0
 requests==2.32.3
-python-dotenv==1.1.0
 httpx==0.28.1
 supabase==1.0.3
+python-dotenv==1.1.0
+# If using Tesseract OCR:
+pytesseract==0.3.10
+# If using Speech Recognition:
+SpeechRecognition==3.9.0
+# If using Flask-SocketIO:  
+Flask-SocketIO==5.3.0
 
 
 
-# If using OCR or voice:
-pytesseract
-SpeechRecognition
+
 
 # If using Supabase client:
 httpx==0.28.1
